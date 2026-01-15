@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMergedPRs } from "@/services/github";
+import { savePullRequests } from "@/services/database";
 import { PRsResponse, APIError } from "@/types";
 
 export async function POST(
@@ -24,6 +25,16 @@ export async function POST(
     }
 
     const prs = await getMergedPRs(org, repos, fromDate, toDate);
+
+    // Save PRs to database for analytics
+    if (prs.length > 0) {
+      try {
+        await savePullRequests(org, prs);
+      } catch (dbError) {
+        console.error("Error saving PRs to database:", dbError);
+        // Don't fail the request if DB save fails
+      }
+    }
 
     return NextResponse.json({
       totalPRs: prs.length,

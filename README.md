@@ -9,6 +9,8 @@ AI-powered engineering reports for leadership. Generate comprehensive summaries 
 - **AI-Powered Summaries**: Claude generates executive summaries categorizing changes by type
 - **Streaming Responses**: Watch the AI summary generate in real-time
 - **Export Options**: Download reports as Markdown or copy to clipboard
+- **Team Performance Dashboard**: Track PRs merged per developer over time with interactive charts
+- **Developer Analytics**: Filter by date range and developer to analyze individual performance
 
 ## Architecture
 
@@ -126,6 +128,9 @@ AI-powered engineering reports for leadership. Generate comprehensive summaries 
 | Framework | Next.js 14 (App Router) | Full-stack React framework |
 | Language | TypeScript | Type safety |
 | Styling | Tailwind CSS | Utility-first CSS |
+| UI Components | shadcn/ui | Accessible React components |
+| Database | Prisma + SQLite | Data persistence for analytics |
+| Charts | Recharts | Interactive data visualization |
 | GitHub API | @octokit/rest | Official GitHub SDK |
 | AI | Anthropic Claude API | Summary generation |
 
@@ -161,15 +166,22 @@ cp .env.example .env.local
 ```env
 GITHUB_TOKEN=ghp_your_github_token
 ANTHROPIC_API_KEY=sk-ant-your_anthropic_key
+DATABASE_URL="file:./dev.db"
 ```
 
-5. Run the development server:
+5. Initialize the database:
+
+```bash
+npm run db:push
+```
+
+6. Run the development server:
 
 ```bash
 npm run dev
 ```
 
-6. Open [http://localhost:3000](http://localhost:3000) in your browser.
+7. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Usage
 
@@ -188,6 +200,7 @@ npm run dev
 | `GET` | `/api/orgs/[org]/repos` | List repositories for an organization |
 | `POST` | `/api/prs` | Fetch merged PRs for selected repositories |
 | `POST` | `/api/summary` | Generate AI summary of PRs |
+| `GET` | `/api/analytics` | Get developer performance statistics |
 
 ## Project Structure
 
@@ -195,26 +208,31 @@ npm run dev
 src/
 ├── app/
 │   ├── api/
+│   │   ├── analytics/         # Developer analytics endpoint
 │   │   ├── orgs/[org]/repos/  # Organization repos endpoint
 │   │   ├── prs/               # Pull requests endpoint
 │   │   └── summary/           # AI summary endpoint
+│   ├── performance/           # Team performance page
+│   │   └── page.tsx
 │   ├── globals.css
 │   ├── layout.tsx
 │   └── page.tsx               # Main application page
 ├── components/
-│   ├── DateRangePicker.tsx
-│   ├── LoadingState.tsx
-│   ├── OrgInput.tsx
-│   ├── PRList.tsx
-│   ├── RepoSelector.tsx
-│   └── SummaryReport.tsx
+│   ├── ui/                    # shadcn/ui components
+│   ├── PerformanceChart.tsx   # PRs per month chart
+│   ├── PerformanceFilters.tsx # Date/developer filters
+│   └── ...                    # Other components
 ├── lib/
+│   ├── prisma.ts              # Prisma client
 │   └── utils.ts
 ├── services/
 │   ├── claude.ts              # Claude AI integration
+│   ├── database.ts            # Database operations
 │   └── github.ts              # GitHub API integration
 └── types/
     └── index.ts
+prisma/
+└── schema.prisma              # Database schema
 ```
 
 ## License

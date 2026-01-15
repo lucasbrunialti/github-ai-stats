@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  repos     Repository[]
+}
+
+model Repository {
+  id             String       @id @default(cuid())
+  name           String
+  fullName       String       @unique
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  pullRequests   PullRequest[]
+
+  @@index([organizationId])
+}
+
+model Developer {
+  id           String        @id @default(cuid())
+  username     String        @unique
+  avatarUrl    String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  pullRequests PullRequest[]
+}
+
+model PullRequest {
+  id           String     @id @default(cuid())
+  number       Int
+  title        String
+  description  String?
+  url          String
+  additions    Int        @default(0)
+  deletions    Int        @default(0)
+  changedFiles Int        @default(0)
+  mergedAt     DateTime
+  repositoryId String
+  repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  developerId  String
+  developer    Developer  @relation(fields: [developerId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  commits      Commit[]
+
+  @@unique([repositoryId, number])
+  @@index([repositoryId])
+  @@index([developerId])
+  @@index([mergedAt])
+}
+
+model Commit {
+  id            String      @id @default(cuid())
+  sha           String
+  message       String
+  author        String
+  date          DateTime
+  pullRequestId String
+  pullRequest   PullRequest @relation(fields: [pullRequestId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+
+  @@unique([pullRequestId, sha])
+  @@index([pullRequestId])
+}
