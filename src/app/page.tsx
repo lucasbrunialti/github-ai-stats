@@ -8,10 +8,11 @@ import {
   SummaryReport,
   LoadingState,
   PRList,
+  DORAMetrics,
 } from "@/components";
-import { Repository, PullRequest } from "@/types";
+import { Repository, PullRequest, DORAMetricsData } from "@/types";
 
-type Step = "org" | "repos" | "loading-prs" | "prs" | "loading-summary" | "summary";
+type Step = "org" | "repos" | "loading-prs" | "prs" | "loading-summary" | "summary" | "loading-dora" | "dora";
 
 export default function Home() {
   const [step, setStep] = useState<Step>("org");
@@ -28,6 +29,7 @@ export default function Home() {
   });
   const [prs, setPRs] = useState<PullRequest[]>([]);
   const [summary, setSummary] = useState("");
+  const [doraMetrics, setDoraMetrics] = useState<DORAMetricsData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoadingRepos, setIsLoadingRepos] = useState(false);
 
@@ -128,6 +130,37 @@ export default function Home() {
     }
   };
 
+  const handleFetchDORA = async () => {
+    setStep("loading-dora");
+    setError(null);
+    setDoraMetrics(null);
+
+    try {
+      const response = await fetch("/api/dora", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          org,
+          repos: selectedRepos,
+          fromDate,
+          toDate,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to fetch DORA metrics");
+      }
+
+      setDoraMetrics(data.metrics);
+      setStep("dora");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+      setStep("prs");
+    }
+  };
+
   const handleReset = () => {
     setStep("org");
     setOrg("");
@@ -135,6 +168,7 @@ export default function Home() {
     setSelectedRepos([]);
     setPRs([]);
     setSummary("");
+    setDoraMetrics(null);
     setError(null);
   };
 
@@ -233,12 +267,20 @@ export default function Home() {
               <PRList prs={prs} />
 
               {prs.length > 0 && (
-                <button
-                  onClick={handleGenerateSummary}
-                  className="w-full mt-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
-                >
-                  Generate AI Summary
-                </button>
+                <div className="mt-6 flex gap-3">
+                  <button
+                    onClick={handleGenerateSummary}
+                    className="flex-1 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                  >
+                    Generate AI Summary
+                  </button>
+                  <button
+                    onClick={handleFetchDORA}
+                    className="flex-1 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+                  >
+                    DORA Metrics
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -275,6 +317,40 @@ export default function Home() {
               fromDate={fromDate}
               toDate={toDate}
               totalPRs={prs.length}
+            />
+          </div>
+        )}
+
+        {/* Loading DORA */}
+        {step === "loading-dora" && (
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <LoadingState message="Calculating DORA metrics..." />
+          </div>
+        )}
+
+        {/* Step 5: DORA Metrics */}
+        {step === "dora" && doraMetrics && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setStep("prs")}
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
+                Back to PRs
+              </button>
+              <button
+                onClick={handleReset}
+                className="text-sm text-blue-600 hover:text-blue-700"
+              >
+                Start New Report
+              </button>
+            </div>
+
+            <DORAMetrics
+              metrics={doraMetrics}
+              org={org}
+              fromDate={fromDate}
+              toDate={toDate}
             />
           </div>
         )}

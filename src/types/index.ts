@@ -20,6 +20,7 @@ export interface PullRequest {
   title: string;
   description: string | null;
   author: string;
+  createdAt: string;
   mergedAt: string;
   commits: Commit[];
   additions: number;
@@ -53,4 +54,55 @@ export interface ReposResponse {
 export interface APIError {
   error: string;
   details?: string;
+}
+
+// DORA Metrics types
+
+export interface Deployment {
+  id: number;
+  environment: string;
+  createdAt: string;
+  repo: string;
+  ref: string;
+  description: string | null;
+}
+
+export type DORALevel = "elite" | "high" | "medium" | "low";
+
+export interface DeploymentFrequencyResult {
+  totalDeployments: number;
+  deploymentsPerDay: number;
+  deploymentsPerWeek: number;
+  periodDays: number;
+  deploymentsByRepo: Record<string, number>;
+  weeklyTrend: { week: string; count: number }[];
+  performanceLevel: DORALevel;
+  source: "deployments" | "releases" | "pull_requests";
+}
+
+export interface LeadTimeItem {
+  repo: string;
+  prNumber: number;
+  title: string;
+  author: string;
+  firstCommitToMergeHours: number;
+  openToMergeHours: number;
+  mergedAt: string;
+}
+
+export interface LeadTimeResult {
+  averageHours: number;
+  medianHours: number;
+  p90Hours: number;
+  items: LeadTimeItem[];
+  performanceLevel: DORALevel;
+}
+
+export interface DORAMetricsData {
+  deploymentFrequency: DeploymentFrequencyResult;
+  leadTime: LeadTimeResult;
+}
+
+export interface DORAMetricsResponse {
+  metrics: DORAMetricsData;
 }
