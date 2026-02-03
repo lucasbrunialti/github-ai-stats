@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Repository } from "@/types";
 
 interface RepoSelectorProps {
@@ -13,11 +14,22 @@ export function RepoSelector({
   selectedRepos,
   onSelectionChange,
 }: RepoSelectorProps) {
+  const [filter, setFilter] = useState("");
+
+  const filteredRepos = repos.filter((r) =>
+    r.name.toLowerCase().includes(filter.toLowerCase())
+  );
+
+  const filteredNames = new Set(filteredRepos.map((r) => r.name));
+  const allFilteredSelected = filteredRepos.length > 0 && filteredRepos.every((r) => selectedRepos.includes(r.name));
+
   const handleToggleAll = () => {
-    if (selectedRepos.length === repos.length) {
-      onSelectionChange([]);
+    if (allFilteredSelected) {
+      onSelectionChange(selectedRepos.filter((r) => !filteredNames.has(r)));
     } else {
-      onSelectionChange(repos.map((r) => r.name));
+      const existing = new Set(selectedRepos);
+      const merged = [...selectedRepos, ...filteredRepos.filter((r) => !existing.has(r.name)).map((r) => r.name)];
+      onSelectionChange(merged);
     }
   };
 
@@ -38,13 +50,21 @@ export function RepoSelector({
         <button
           type="button"
           onClick={handleToggleAll}
-          className="text-sm text-blue-600 hover:text-blue-800"
+          disabled={filteredRepos.length === 0}
+          className="text-sm text-blue-600 hover:text-blue-800 disabled:text-gray-400 disabled:cursor-not-allowed"
         >
-          {selectedRepos.length === repos.length ? "Deselect All" : "Select All"}
+          {allFilteredSelected ? "Deselect" : "Select"}{filter ? ` ${filteredRepos.length} filtered` : " All"}
         </button>
       </div>
+      <input
+        type="text"
+        value={filter}
+        onChange={(e) => setFilter(e.target.value)}
+        placeholder="Filter by name..."
+        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      />
       <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-lg">
-        {repos.map((repo) => (
+        {filteredRepos.map((repo) => (
           <label
             key={repo.name}
             className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
