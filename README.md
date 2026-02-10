@@ -9,14 +9,133 @@ AI-powered engineering reports for leadership. Generate comprehensive summaries 
 - **AI-Powered Summaries**: Claude generates executive summaries categorizing changes by type
 - **Streaming Responses**: Watch the AI summary generate in real-time
 - **Export Options**: Download reports as Markdown or copy to clipboard
+- **Team Performance Dashboard**: Track PRs merged per developer over time with interactive charts
+- **Developer Analytics**: Filter by date range and developer to analyze individual performance
+- **Scheduled Reports**: Automatic weekly and monthly reports sent to Slack
+- **Slack Integration**: Receive formatted engineering summaries directly in your Slack channel
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           Web Application                                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                        FRONTEND (React)                              │   │
+│   │  ┌───────────┐  ┌───────────┐  ┌───────────┐  ┌───────────────┐    │   │
+│   │  │  Org      │  │  Date     │  │  Repo     │  │   Report      │    │   │
+│   │  │  Input    │  │  Picker   │  │  Filter   │  │   Viewer      │    │   │
+│   │  └───────────┘  └───────────┘  └───────────┘  └───────────────┘    │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                      │                                       │
+│                                      ▼                                       │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                        BACKEND (Node.js)                             │   │
+│   │                                                                      │   │
+│   │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐          │   │
+│   │  │   GitHub     │───▶│   PR Data    │───▶│   Claude     │          │   │
+│   │  │   Service    │    │   Aggregator │    │   Summarizer │          │   │
+│   │  └──────────────┘    └──────────────┘    └──────────────┘          │   │
+│   │         │                                        │                  │   │
+│   │         ▼                                        ▼                  │   │
+│   │  ┌────────────────────────────────────────────────────────────┐    │   │
+│   │  │  • List repos from org         • Executive summary         │    │   │
+│   │  │  • Merged PRs from each repo   • Categorization            │    │   │
+│   │  │  • Commits from each PR        • Highlights and risks      │    │   │
+│   │  └────────────────────────────────────────────────────────────┘    │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+## Application Flow
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│ 1. USER ENTERS ORGANIZATION                                      │
+│    ┌─────────────────────────────────────────┐                   │
+│    │  Organization: [ vercel              ]  │                   │
+│    │                         [Load Repos →]  │                   │
+│    └─────────────────────────────────────────┘                   │
+└──────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌──────────────────────────────────────────────────────────────────┐
+│ 2. SYSTEM LOADS REPOS FROM ORG                                   │
+│    GET /api/orgs/{org}/repos                                     │
+│    → Lists all public/private repos (with permission)            │
+└──────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌──────────────────────────────────────────────────────────────────┐
+│ 3. USER SELECTS REPOS AND DATE RANGE                             │
+│    ┌─────────────────────────────────────────┐                   │
+│    │  Repositories:                          │                   │
+│    │  ☑ next.js                              │                   │
+│    │  ☑ turbo                                │                   │
+│    │  ☐ swr                                  │                   │
+│    │  ☑ ai                                   │                   │
+│    │                                         │                   │
+│    │  Period: [2026-01-01] to [2026-01-12]   │                   │
+│    │                                         │                   │
+│    │              [Generate Report →]        │                   │
+│    └─────────────────────────────────────────┘                   │
+└──────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌──────────────────────────────────────────────────────────────────┐
+│ 4. BACKEND FETCHES MERGED PRs                                    │
+│    POST /api/prs                                                 │
+│    → For each selected repo:                                     │
+│      • Lists PRs with state=closed                               │
+│      • Filters by merged_at in date range                        │
+│      • Fetches commits for each PR                               │
+└──────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌──────────────────────────────────────────────────────────────────┐
+│ 5. CLAUDE GENERATES EXECUTIVE SUMMARY                            │
+│    POST /api/summary                                             │
+│    → Sends context: PRs + descriptions + commits                 │
+│    → Receives: Categorized and formatted summary                 │
+└──────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌──────────────────────────────────────────────────────────────────┐
+│ 6. DISPLAYS REPORT                                               │
+│    ┌─────────────────────────────────────────────────────────┐   │
+│    │  📊 Engineering Report - Vercel                         │   │
+│    │  Period: Jan 1-12, 2026 | 47 PRs merged                 │   │
+│    │                                                         │   │
+│    │  ## 🚀 New Features (12)                                │   │
+│    │  - Next.js: Implemented streaming SSR improvements...   │   │
+│    │  - Turbo: Added remote caching for monorepos...         │   │
+│    │                                                         │   │
+│    │  ## 🐛 Bug Fixes (23)                                   │   │
+│    │  - Fixed memory leak in image optimization...           │   │
+│    │                                                         │   │
+│    │  ## ⚠️ Attention Points                                 │   │
+│    │  - Large refactor in auth module - monitor for issues   │   │
+│    │                                                         │   │
+│    │  [📥 Download MD] [📋 Copy] [🔄 Regenerate]             │   │
+│    └─────────────────────────────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────────────┘
+```
 
 ## Tech Stack
 
-- **Framework**: Next.js 14 (App Router)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **GitHub API**: @octokit/rest
-- **AI**: Anthropic Claude API
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| Framework | Next.js 14 (App Router) | Full-stack React framework |
+| Language | TypeScript | Type safety |
+| Styling | Tailwind CSS | Utility-first CSS |
+| UI Components | shadcn/ui | Accessible React components |
+| Database | Prisma + SQLite | Data persistence for analytics |
+| Charts | Recharts | Interactive data visualization |
+| Scheduler | node-cron | Scheduled report automation |
+| GitHub API | @octokit/rest | Official GitHub SDK |
+| AI | Anthropic Claude API | Summary generation |
 
 ## Prerequisites
 
@@ -50,15 +169,22 @@ cp .env.example .env.local
 ```env
 GITHUB_TOKEN=ghp_your_github_token
 ANTHROPIC_API_KEY=sk-ant-your_anthropic_key
+DATABASE_URL="file:./dev.db"
 ```
 
-5. Run the development server:
+5. Initialize the database:
+
+```bash
+npm run db:push
+```
+
+6. Run the development server:
 
 ```bash
 npm run dev
 ```
 
-6. Open [http://localhost:3000](http://localhost:3000) in your browser.
+7. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Usage
 
@@ -70,6 +196,37 @@ npm run dev
 6. Click "Generate AI Summary" to create the report
 7. Download or copy the generated report
 
+## Scheduled Reports
+
+Configure automatic weekly and monthly reports sent to Slack:
+
+1. Go to **Scheduled Reports** from the main page
+2. Click **Add Configuration**
+3. Enter your organization name and Slack webhook URL
+4. Test the webhook to verify it works
+5. Save the configuration
+
+### Running the Scheduler
+
+Run the scheduler in a separate terminal:
+
+```bash
+npm run scheduler
+```
+
+The scheduler will:
+- Send **weekly reports** every Monday at 9am (configurable)
+- Send **monthly reports** on the 1st of each month at 9am (configurable)
+- Automatically reload configurations every hour
+
+### Getting a Slack Webhook URL
+
+1. Go to [Slack API](https://api.slack.com/apps)
+2. Create a new app or select existing
+3. Enable **Incoming Webhooks**
+4. Add a webhook to your workspace
+5. Copy the webhook URL
+
 ## API Endpoints
 
 | Method | Endpoint | Description |
@@ -77,6 +234,10 @@ npm run dev
 | `GET` | `/api/orgs/[org]/repos` | List repositories for an organization |
 | `POST` | `/api/prs` | Fetch merged PRs for selected repositories |
 | `POST` | `/api/summary` | Generate AI summary of PRs |
+| `GET` | `/api/analytics` | Get developer performance statistics |
+| `GET/POST/PUT/DELETE` | `/api/reports/config` | Manage report configurations |
+| `POST` | `/api/reports/test` | Test Slack webhook |
+| `POST` | `/api/reports/trigger` | Manually trigger a report |
 
 ## Project Structure
 
@@ -84,26 +245,36 @@ npm run dev
 src/
 ├── app/
 │   ├── api/
+│   │   ├── analytics/         # Developer analytics endpoint
 │   │   ├── orgs/[org]/repos/  # Organization repos endpoint
 │   │   ├── prs/               # Pull requests endpoint
+│   │   ├── reports/           # Scheduled reports endpoints
 │   │   └── summary/           # AI summary endpoint
+│   ├── performance/           # Team performance page
+│   ├── settings/              # Scheduled reports config page
 │   ├── globals.css
 │   ├── layout.tsx
 │   └── page.tsx               # Main application page
 ├── components/
-│   ├── DateRangePicker.tsx
-│   ├── LoadingState.tsx
-│   ├── OrgInput.tsx
-│   ├── PRList.tsx
-│   ├── RepoSelector.tsx
-│   └── SummaryReport.tsx
+│   ├── ui/                    # shadcn/ui components
+│   ├── PerformanceChart.tsx   # PRs per month chart
+│   ├── PerformanceFilters.tsx # Date/developer filters
+│   └── ...                    # Other components
 ├── lib/
+│   ├── prisma.ts              # Prisma client
 │   └── utils.ts
+├── scheduler/
+│   └── index.ts               # node-cron scheduler
 ├── services/
 │   ├── claude.ts              # Claude AI integration
-│   └── github.ts              # GitHub API integration
+│   ├── database.ts            # Database operations
+│   ├── github.ts              # GitHub API integration
+│   ├── report-generator.ts    # Report generation logic
+│   └── slack.ts               # Slack integration
 └── types/
     └── index.ts
+prisma/
+└── schema.prisma              # Database schema
 ```
 
 ## License
