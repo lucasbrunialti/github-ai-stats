@@ -77,3 +77,32 @@ model Commit {
   @@unique([pullRequestId, sha])
   @@index([pullRequestId])
 }
+
+model ReportConfig {
+  id              String   @id @default(cuid())
+  name            String
+  organizationName String
+  slackWebhookUrl String
+  weeklyEnabled   Boolean  @default(true)
+  monthlyEnabled  Boolean  @default(true)
+  weeklySchedule  String   @default("0 9 * * 1")  // Monday 9am
+  monthlySchedule String   @default("0 9 1 * *")  // 1st of month 9am
+  isActive        Boolean  @default(true)
+  lastWeeklyRun   DateTime?
+  lastMonthlyRun  DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model ReportLog {
+  id          String   @id @default(cuid())
+  configId    String
+  reportType  String   // "weekly" or "monthly"
+  status      String   // "success", "failed"
+  summary     String?
+  error       String?
+  sentAt      DateTime @default(now())
+
+  @@index([configId])
+  @@index([sentAt])
+}

@@ -11,6 +11,8 @@ AI-powered engineering reports for leadership. Generate comprehensive summaries 
 - **Export Options**: Download reports as Markdown or copy to clipboard
 - **Team Performance Dashboard**: Track PRs merged per developer over time with interactive charts
 - **Developer Analytics**: Filter by date range and developer to analyze individual performance
+- **Scheduled Reports**: Automatic weekly and monthly reports sent to Slack
+- **Slack Integration**: Receive formatted engineering summaries directly in your Slack channel
 
 ## Architecture
 
@@ -131,6 +133,7 @@ AI-powered engineering reports for leadership. Generate comprehensive summaries 
 | UI Components | shadcn/ui | Accessible React components |
 | Database | Prisma + SQLite | Data persistence for analytics |
 | Charts | Recharts | Interactive data visualization |
+| Scheduler | node-cron | Scheduled report automation |
 | GitHub API | @octokit/rest | Official GitHub SDK |
 | AI | Anthropic Claude API | Summary generation |
 
@@ -193,6 +196,37 @@ npm run dev
 6. Click "Generate AI Summary" to create the report
 7. Download or copy the generated report
 
+## Scheduled Reports
+
+Configure automatic weekly and monthly reports sent to Slack:
+
+1. Go to **Scheduled Reports** from the main page
+2. Click **Add Configuration**
+3. Enter your organization name and Slack webhook URL
+4. Test the webhook to verify it works
+5. Save the configuration
+
+### Running the Scheduler
+
+Run the scheduler in a separate terminal:
+
+```bash
+npm run scheduler
+```
+
+The scheduler will:
+- Send **weekly reports** every Monday at 9am (configurable)
+- Send **monthly reports** on the 1st of each month at 9am (configurable)
+- Automatically reload configurations every hour
+
+### Getting a Slack Webhook URL
+
+1. Go to [Slack API](https://api.slack.com/apps)
+2. Create a new app or select existing
+3. Enable **Incoming Webhooks**
+4. Add a webhook to your workspace
+5. Copy the webhook URL
+
 ## API Endpoints
 
 | Method | Endpoint | Description |
@@ -201,6 +235,9 @@ npm run dev
 | `POST` | `/api/prs` | Fetch merged PRs for selected repositories |
 | `POST` | `/api/summary` | Generate AI summary of PRs |
 | `GET` | `/api/analytics` | Get developer performance statistics |
+| `GET/POST/PUT/DELETE` | `/api/reports/config` | Manage report configurations |
+| `POST` | `/api/reports/test` | Test Slack webhook |
+| `POST` | `/api/reports/trigger` | Manually trigger a report |
 
 ## Project Structure
 
@@ -211,9 +248,10 @@ src/
 │   │   ├── analytics/         # Developer analytics endpoint
 │   │   ├── orgs/[org]/repos/  # Organization repos endpoint
 │   │   ├── prs/               # Pull requests endpoint
+│   │   ├── reports/           # Scheduled reports endpoints
 │   │   └── summary/           # AI summary endpoint
 │   ├── performance/           # Team performance page
-│   │   └── page.tsx
+│   ├── settings/              # Scheduled reports config page
 │   ├── globals.css
 │   ├── layout.tsx
 │   └── page.tsx               # Main application page
@@ -225,10 +263,14 @@ src/
 ├── lib/
 │   ├── prisma.ts              # Prisma client
 │   └── utils.ts
+├── scheduler/
+│   └── index.ts               # node-cron scheduler
 ├── services/
 │   ├── claude.ts              # Claude AI integration
 │   ├── database.ts            # Database operations
-│   └── github.ts              # GitHub API integration
+│   ├── github.ts              # GitHub API integration
+│   ├── report-generator.ts    # Report generation logic
+│   └── slack.ts               # Slack integration
 └── types/
     └── index.ts
 prisma/

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, Settings } from "lucide-react";
 import {
   OrgInput,
   DateRangePicker,
@@ -151,13 +151,22 @@ export default function Home() {
           <p className="text-gray-600">
             AI-powered engineering reports for leadership
           </p>
-          <Link
-            href="/performance"
-            className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
-          >
-            <BarChart3 className="h-4 w-4" />
-            View Team Performance
-          </Link>
+          <div className="flex justify-center gap-3 mt-4">
+            <Link
+              href="/performance"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+            >
+              <BarChart3 className="h-4 w-4" />
+              Team Performance
+            </Link>
+            <Link
+              href="/settings"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
+            >
+              <Settings className="h-4 w-4" />
+              Scheduled Reports
+            </Link>
+          </div>
         </div>
 
         {/* Error Alert */}
